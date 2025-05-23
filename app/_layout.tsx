@@ -5,18 +5,16 @@ import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { Provider as StoreProvider } from 'react-redux';
 import { useFonts } from 'expo-font';
-import { 
+import {
   Poppins_400Regular,
   Poppins_500Medium,
-  Poppins_700Bold 
+  Poppins_700Bold,
 } from '@expo-google-fonts/poppins';
-import { 
-  Nunito_400Regular,
-  Nunito_700Bold 
-} from '@expo-google-fonts/nunito';
+import { Nunito_400Regular, Nunito_700Bold } from '@expo-google-fonts/nunito';
 import { SplashScreen } from 'expo-router';
 import theme from '@/theme';
 import { store } from '@/store';
+import { loadBookmarks } from '@/store/slices/bookmarksSlice';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -31,6 +29,11 @@ export default function RootLayout() {
     'Nunito-Regular': Nunito_400Regular,
     'Nunito-Bold': Nunito_700Bold,
   });
+
+  // Load bookmarks when app starts
+  useEffect(() => {
+    store.dispatch(loadBookmarks());
+  }, []);
 
   // Hide splash screen once fonts are loaded
   useEffect(() => {
