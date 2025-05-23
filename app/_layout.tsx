@@ -12,12 +12,28 @@ import {
 } from '@expo-google-fonts/poppins';
 import { Nunito_400Regular, Nunito_700Bold } from '@expo-google-fonts/nunito';
 import { SplashScreen } from 'expo-router';
-import theme from '@/theme';
+import { lightTheme, darkTheme } from '@/theme';
 import { store } from '@/store';
 import { loadBookmarks } from '@/store/slices/bookmarksSlice';
+import { usePreferences } from '@/hooks/usePreferences';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
+
+function AppContent() {
+  const { preferences } = usePreferences();
+  const isDarkMode = preferences.darkMode;
+
+  return (
+    <PaperProvider theme={isDarkMode ? darkTheme : lightTheme}>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="+not-found" options={{ title: 'Oops!' }} />
+      </Stack>
+      <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+    </PaperProvider>
+  );
+}
 
 export default function RootLayout() {
   useFrameworkReady();
@@ -49,13 +65,7 @@ export default function RootLayout() {
 
   return (
     <StoreProvider store={store}>
-      <PaperProvider theme={theme}>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="+not-found" options={{ title: 'Oops!' }} />
-        </Stack>
-        <StatusBar style="auto" />
-      </PaperProvider>
+      <AppContent />
     </StoreProvider>
   );
 }

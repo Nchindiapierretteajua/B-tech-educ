@@ -1,10 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-interface Bookmark {
-  id: string;
-  type: 'exam' | 'scholarship' | 'guide';
-}
+import { APP_CONSTANTS } from '@/lib/constants';
+import { Bookmark } from '@/lib/types';
+import * as storage from '@/lib/storage';
 
 interface BookmarksState {
   items: Bookmark[];
@@ -18,52 +15,46 @@ const initialState: BookmarksState = {
   error: null,
 };
 
-const STORAGE_KEY = '@bookmarks';
-
 // Load bookmarks from storage
 export const loadBookmarks = createAsyncThunk(
   'bookmarks/loadBookmarks',
   async () => {
     try {
-      const storedBookmarks = await AsyncStorage.getItem(STORAGE_KEY);
-      return storedBookmarks ? JSON.parse(storedBookmarks) : [];
+      return await storage.getBookmarks();
     } catch (error) {
       throw new Error('Failed to load bookmarks');
     }
   }
 );
 
-// Save bookmarks to storage
-const saveBookmarks = async (bookmarks: Bookmark[]) => {
-  try {
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(bookmarks));
-  } catch (error) {
-    console.error('Failed to save bookmarks:', error);
-  }
-};
-
 const bookmarksSlice = createSlice({
   name: 'bookmarks',
   initialState,
   reducers: {
     toggleBookmark: (state, action) => {
-      const { id, type } = action.payload;
+      const { itemId, type } = action.payload;
       const existingIndex = state.items.findIndex(
-        (item) => item.id === id && item.type === type
+        (item) => item.itemId === itemId && item.type === type
       );
 
       if (existingIndex === -1) {
-        state.items.push({ id, type });
+        const newBookmark: Bookmark = {
+          id: Date.now().toString(),
+          type,
+          itemId,
+          createdAt: new Date().toISOString(),
+        };
+        state.items.push(newBookmark);
+        storage.addBookmark(newBookmark);
       } else {
+        const bookmark = state.items[existingIndex];
         state.items.splice(existingIndex, 1);
+        storage.removeBookmark(bookmark.id);
       }
-
-      // Save to storage after each change
-      saveBookmarks(state.items);
     },
     clearBookmarks: (state) => {
       state.items = [];
-      saveBookmarks([]);
+      storage.clearStorage();
     },
   },
   extraReducers: (builder) => {

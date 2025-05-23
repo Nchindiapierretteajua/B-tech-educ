@@ -37,35 +37,61 @@ export async function clearStorage(): Promise<void> {
 }
 
 export async function getBookmarks(): Promise<Bookmark[]> {
-  const bookmarks = await getItem<Bookmark[]>(
-    APP_CONSTANTS.STORAGE_KEYS.BOOKMARKS
-  );
-  return bookmarks || [];
+  try {
+    const bookmarks = await getItem<Bookmark[]>(
+      APP_CONSTANTS.STORAGE_KEYS.BOOKMARKS
+    );
+    return bookmarks || [];
+  } catch (error) {
+    console.error('Failed to get bookmarks:', error);
+    return [];
+  }
 }
 
 export async function addBookmark(bookmark: Bookmark): Promise<void> {
-  const bookmarks = await getBookmarks();
-  await setItem(APP_CONSTANTS.STORAGE_KEYS.BOOKMARKS, [...bookmarks, bookmark]);
+  try {
+    const bookmarks = await getBookmarks();
+    const updatedBookmarks = [...bookmarks, bookmark];
+    await setItem(APP_CONSTANTS.STORAGE_KEYS.BOOKMARKS, updatedBookmarks);
+  } catch (error) {
+    console.error('Failed to add bookmark:', error);
+  }
 }
 
 export async function removeBookmark(bookmarkId: string): Promise<void> {
-  const bookmarks = await getBookmarks();
-  const updatedBookmarks = bookmarks.filter((b) => b.id !== bookmarkId);
-  await setItem(APP_CONSTANTS.STORAGE_KEYS.BOOKMARKS, updatedBookmarks);
+  try {
+    const bookmarks = await getBookmarks();
+    const updatedBookmarks = bookmarks.filter((b) => b.id !== bookmarkId);
+    await setItem(APP_CONSTANTS.STORAGE_KEYS.BOOKMARKS, updatedBookmarks);
+  } catch (error) {
+    console.error('Failed to remove bookmark:', error);
+  }
 }
 
 export async function isBookmarked(
   itemId: string,
   type: Bookmark['type']
 ): Promise<boolean> {
-  const bookmarks = await getBookmarks();
-  return bookmarks.some((b) => b.itemId === itemId && b.type === type);
+  try {
+    const bookmarks = await getBookmarks();
+    return bookmarks.some((b) => b.itemId === itemId && b.type === type);
+  } catch (error) {
+    console.error('Failed to check bookmark status:', error);
+    return false;
+  }
 }
 
 export async function getBookmark(
   itemId: string,
   type: Bookmark['type']
 ): Promise<Bookmark | null> {
-  const bookmarks = await getBookmarks();
-  return bookmarks.find((b) => b.itemId === itemId && b.type === type) || null;
+  try {
+    const bookmarks = await getBookmarks();
+    return (
+      bookmarks.find((b) => b.itemId === itemId && b.type === type) || null
+    );
+  } catch (error) {
+    console.error('Failed to get bookmark:', error);
+    return null;
+  }
 }

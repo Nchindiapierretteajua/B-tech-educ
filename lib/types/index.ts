@@ -14,6 +14,10 @@ export interface Exam extends BaseEntity {
   requirements: string[];
   fee: number;
   website?: string;
+  imageUrl?: string;
+  startDate: string;
+  endDate: string;
+  documentUrl?: string;
 }
 
 export interface Scholarship extends BaseEntity {
@@ -23,6 +27,9 @@ export interface Scholarship extends BaseEntity {
   requirements: string[];
   website?: string;
   organization: string;
+  imageUrl?: string;
+  applicationUrl: string;
+  lastUpdated: string;
 }
 
 export interface Guide extends BaseEntity {
@@ -31,6 +38,11 @@ export interface Guide extends BaseEntity {
   author: string;
   tags: string[];
   readingTime: number; // in minutes
+  imageUrl?: string;
+  steps: {
+    title: string;
+    description: string;
+  }[];
 }
 
 export interface DateRange {

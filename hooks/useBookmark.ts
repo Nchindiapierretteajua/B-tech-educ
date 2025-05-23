@@ -23,23 +23,20 @@ export const useBookmark = () => {
   }, []);
 
   const isBookmarked = useCallback(
-    async (id: string, type: Bookmark['type']) => {
-      try {
-        return await storage.isBookmarked(id, type);
-      } catch (err) {
-        console.error('Failed to check bookmark status:', err);
-        return false;
-      }
+    (id: string, type: Bookmark['type']) => {
+      return bookmarks.some((b) => b.itemId === id && b.type === type);
     },
-    []
+    [bookmarks]
   );
 
   const toggleBookmark = useCallback(
     async (id: string, type: Bookmark['type']) => {
       try {
-        const isCurrentlyBookmarked = await isBookmarked(id, type);
+        const isCurrentlyBookmarked = isBookmarked(id, type);
         if (isCurrentlyBookmarked) {
-          const bookmark = await storage.getBookmark(id, type);
+          const bookmark = bookmarks.find(
+            (b) => b.itemId === id && b.type === type
+          );
           if (bookmark) {
             await storage.removeBookmark(bookmark.id);
             setBookmarks((prev) => prev.filter((b) => b.id !== bookmark.id));
@@ -60,7 +57,7 @@ export const useBookmark = () => {
         );
       }
     },
-    [isBookmarked]
+    [bookmarks, isBookmarked]
   );
 
   useEffect(() => {
