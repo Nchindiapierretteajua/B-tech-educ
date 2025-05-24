@@ -4,9 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useRouter } from 'expo-router';
 import { Text, Chip } from 'react-native-paper';
 import { RootState, AppDispatch } from '@/store';
-import { Scholarship } from '@/types/scholarship';
-import { Exam } from '@/types/exam';
-import { Guide } from '@/types/guide';
+import { Scholarship, Exam, Guide } from '@/types/api';
 import { Bookmark } from '@/lib/types';
 import Header from '@/components/ui/Header';
 import Card from '@/components/ui/Card';
@@ -14,7 +12,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import { BookmarkX } from 'lucide-react-native';
 import theme from '@/theme';
 import AnimatedTransition from '@/components/ui/AnimatedTransition';
-import { loadBookmarks, toggleBookmark } from '@/store/slices/bookmarksSlice';
+import { loadBookmarks, toggleBookmarkAsync } from '@/store/slices/bookmarksSlice';
 
 type BookmarkedItem = {
   bookmark: Bookmark;
@@ -122,7 +120,7 @@ export default function BookmarksScreen() {
 
   const handleUnfavorite = (item: BookmarkedItem) => {
     dispatch(
-      toggleBookmark({ itemId: item.bookmark.itemId, type: item.bookmark.type })
+      toggleBookmarkAsync({ itemId: item.bookmark.itemId, type: item.bookmark.type })
     );
   };
 

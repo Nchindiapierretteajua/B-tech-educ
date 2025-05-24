@@ -6,6 +6,11 @@ import { useBookmark } from '@/hooks/useBookmark';
 import theme from '@/theme';
 import AnimatedTransition from './AnimatedTransition';
 
+// Import placeholder images
+import ExamPlaceholder from '@/assets/images/exam_placeholder.jpg';
+import GuidePlaceholder from '@/assets/images/guide_placeholder.jpg';
+import ScholarshipPlaceholder from '@/assets/images/scholarship_placeholder.png';
+
 interface CardProps {
   id: string;
   type: 'scholarship' | 'exam' | 'guide';
@@ -29,13 +34,36 @@ const Card: React.FC<CardProps> = ({
   style,
   index = 0,
 }) => {
-  const { isBookmarked, toggleBookmark } = useBookmark();
+  const { isBookmarked, toggleBookmark, isItemToggling } = useBookmark();
   const bookmarked = isBookmarked(id, type);
+  const toggling = isItemToggling(id, type);
 
   const handleBookmarkPress = (e: any) => {
     e.stopPropagation();
-    toggleBookmark(id, type);
+    if (!toggling) { // Prevent multiple rapid clicks while processing
+      toggleBookmark(id, type);
+    }
   };
+
+  // Determine the correct placeholder image
+  let placeholderImage;
+  switch (type) {
+    case 'exam':
+      placeholderImage = ExamPlaceholder;
+      break;
+    case 'guide':
+      placeholderImage = GuidePlaceholder;
+      break;
+    case 'scholarship':
+      placeholderImage = ScholarshipPlaceholder;
+      break;
+    default:
+      // Fallback to a generic one if type is somehow unexpected, though TS should prevent this.
+      // Or handle as an error/default image. For now, let's assume one of the above.
+      // Using guide placeholder as a generic fallback if needed, or you can add a more generic one.
+      placeholderImage = GuidePlaceholder; 
+      break;
+  }
 
   // Calculate staggered animation delay
   const animationDelay = 100 + index * 100; // 100ms delay for first item, then 100ms increment per item
@@ -53,9 +81,12 @@ const Card: React.FC<CardProps> = ({
       style={containerStyle}
     >
       <PaperCard mode="elevated" style={styles.card} onPress={onPress}>
-        {imageUrl && (
-          <PaperCard.Cover source={{ uri: imageUrl }} style={styles.cover} />
-        )}
+        {/* Always show an image, using the placeholder as the main source for now */}
+        <PaperCard.Cover 
+          source={placeholderImage as number} // Use placeholder as the main source
+          style={styles.cover} 
+          // defaultSource prop is not needed if placeholder is the main source
+        />
         <PaperCard.Content style={styles.content}>
           <View style={styles.titleContainer}>
             <Text
@@ -73,6 +104,7 @@ const Card: React.FC<CardProps> = ({
               onPress={handleBookmarkPress}
               style={styles.bookmarkButton}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              disabled={toggling} // Disable button while toggling
             >
               <Heart
                 size={22}
@@ -81,7 +113,7 @@ const Card: React.FC<CardProps> = ({
                     ? theme.colors.primary
                     : theme.colors.onSurfaceVariant
                 }
-                fill={bookmarked ? theme.colors.primary : 'transparent'}
+                fill={bookmarked ? theme.colors.primary : (toggling ? theme.colors.surfaceDisabled : 'transparent')}
               />
             </TouchableOpacity>
           </View>

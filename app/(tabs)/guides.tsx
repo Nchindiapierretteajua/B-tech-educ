@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, FlatList, ScrollView } from 'react-native';
+import { StyleSheet, View, FlatList, ScrollView, Text } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { useRouter } from 'expo-router';
 import { AppDispatch, RootState } from '@/store';
 import { fetchGuides, setSelectedCategory, searchGuides } from '@/store/slices/guidesSlice';
-import { Guide } from '@/types/guide';
+import { Guide } from '@/types/api';
 import Header from '@/components/ui/Header';
 import SearchBar from '@/components/ui/SearchBar';
 import Card from '@/components/ui/Card';
@@ -17,7 +17,7 @@ import AnimatedTransition from '@/components/ui/AnimatedTransition';
 export default function GuidesScreen() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
-  const { filteredItems, selectedCategory, loading, error } = useSelector((state: RootState) => state.guides);
+  const { filteredItems, selectedCategory, loading, error, isStaleData } = useSelector((state: RootState) => state.guides);
   const [searchQuery, setSearchQuery] = useState('');
   
   // Guide categories for filtering
@@ -66,7 +66,7 @@ export default function GuidesScreen() {
       title={item.title}
       description={item.description}
       imageUrl={item.imageUrl}
-      caption={`For ${item.audience === 'all' ? 'Everyone' : item.audience}s`}
+      caption={`For ${item.audience === 'ALL' ? 'Everyone' : item.audience}s`}
       onPress={() => handleGuidePress(item)}
       index={index}
     />
@@ -77,10 +77,13 @@ export default function GuidesScreen() {
   }
   
   if (error) {
+    const errorMessage = typeof error === 'object' && error !== null && 'message' in error 
+                          ? (error as { message: string }).message 
+                          : typeof error === 'string' ? error : 'An unknown error occurred.';
     return (
       <EmptyState
         title="Couldn't load guides"
-        description={error}
+        description={errorMessage}
         actionLabel="Try Again"
         onActionPress={() => dispatch(fetchGuides())}
       />
@@ -100,6 +103,17 @@ export default function GuidesScreen() {
           value={searchQuery}
           onChangeText={handleSearch}
         />
+
+        {/* Stale Data Indicator */}
+        {isStaleData && !loading && (
+          <AnimatedTransition entering="fadeIn" duration={300}>
+            <View style={styles.staleDataContainer}>
+              <Text style={styles.staleDataText}>
+                Showing older data. Pull down to refresh for the latest guides.
+              </Text>
+            </View>
+          </AnimatedTransition>
+        )}
         
         <AnimatedTransition entering="fadeIn" duration={400} delay={200}>
           <ScrollView
@@ -153,5 +167,19 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     paddingBottom: theme.spacing.xl,
+  },
+  staleDataContainer: {
+    backgroundColor: theme.colors.tertiaryContainer,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: 4,
+    marginBottom: theme.spacing.md,
+    alignItems: 'center',
+  },
+  staleDataText: {
+    color: theme.colors.onTertiaryContainer,
+    fontSize: 13,
+    textAlign: 'center',
+    fontFamily: theme.fonts.regular.fontFamily,
   },
 });

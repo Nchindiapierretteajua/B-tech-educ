@@ -10,7 +10,7 @@ import {
   setDateRange,
   resetFilters,
 } from '@/store/slices/scholarshipsSlice';
-import { Scholarship } from '@/types/scholarship';
+import { Scholarship } from '@/types/api';
 import Header from '@/components/ui/Header';
 import SearchBar from '@/components/ui/SearchBar';
 import Card from '@/components/ui/Card';
@@ -97,10 +97,13 @@ export default function ScholarshipsScreen() {
   }
 
   if (error) {
+    const errorMessage = typeof error === 'object' && error !== null && 'message' in error 
+                          ? (error as { message: string }).message 
+                          : typeof error === 'string' ? error : 'An unknown error occurred.';
     return (
       <EmptyState
         title="Couldn't load scholarships"
-        description={error}
+        description={errorMessage}
         actionLabel="Try Again"
         onActionPress={() => dispatch(fetchScholarships())}
       />

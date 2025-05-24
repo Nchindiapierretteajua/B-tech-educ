@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { View, ActivityIndicator } from 'react-native';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { Provider as StoreProvider } from 'react-redux';
@@ -21,8 +22,20 @@ import { usePreferences } from '@/hooks/usePreferences';
 SplashScreen.preventAutoHideAsync();
 
 function AppContent() {
-  const { preferences } = usePreferences();
+  const { preferences, isLoading: preferencesLoading } = usePreferences();
   const isDarkMode = preferences.darkMode;
+
+  if (preferencesLoading) {
+    // Show a loader while preferences are loading to prevent theme flash
+    // Using theme colors for the loader itself, defaults to light if theme isn't loaded yet
+    const initialBgColor = preferences.darkMode ? darkTheme.colors.background : lightTheme.colors.background;
+    const initialIndicatorColor = preferences.darkMode ? darkTheme.colors.primary : lightTheme.colors.primary;
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: initialBgColor }}>
+        <ActivityIndicator size="large" color={initialIndicatorColor} />
+      </View>
+    );
+  }
 
   return (
     <PaperProvider theme={isDarkMode ? darkTheme : lightTheme}>

@@ -1,26 +1,21 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { Bookmark } from '@/lib/types';
-import * as storage from '@/lib/storage';
+import { AppDispatch, RootState } from '@/store';
+import {
+  toggleBookmarkAsync,
+  // loadBookmarks, // loadBookmarks is likely dispatched globally, e.g., in App.tsx or main tab screens
+  ToggleBookmarkArgs
+} from '@/store/slices/bookmarksSlice';
 
 export const useBookmark = () => {
-  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const dispatch = useDispatch<AppDispatch>();
 
-  const loadBookmarks = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await storage.getBookmarks();
-      setBookmarks(data);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err : new Error('Failed to load bookmarks')
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  // Select bookmark data from Redux store
+  const bookmarks = useSelector((state: RootState) => state.bookmarks.items);
+  const itemLoading = useSelector((state: RootState) => state.bookmarks.itemLoading);
+  const overallLoading = useSelector((state: RootState) => state.bookmarks.loading); // For initial load if needed
+  const error = useSelector((state: RootState) => state.bookmarks.error);
 
   const isBookmarked = useCallback(
     (id: string, type: Bookmark['type']) => {
@@ -30,46 +25,36 @@ export const useBookmark = () => {
   );
 
   const toggleBookmark = useCallback(
-    async (id: string, type: Bookmark['type']) => {
-      try {
-        const isCurrentlyBookmarked = isBookmarked(id, type);
-        if (isCurrentlyBookmarked) {
-          const bookmark = bookmarks.find(
-            (b) => b.itemId === id && b.type === type
-          );
-          if (bookmark) {
-            await storage.removeBookmark(bookmark.id);
-            setBookmarks((prev) => prev.filter((b) => b.id !== bookmark.id));
-          }
-        } else {
-          const newBookmark: Bookmark = {
-            id: Date.now().toString(),
-            type,
-            itemId: id,
-            createdAt: new Date().toISOString(),
-          };
-          await storage.addBookmark(newBookmark);
-          setBookmarks((prev) => [...prev, newBookmark]);
-        }
-      } catch (err) {
-        setError(
-          err instanceof Error ? err : new Error('Failed to toggle bookmark')
-        );
-      }
+    (id: string, type: Bookmark['type']) => {
+      const payload: ToggleBookmarkArgs = { itemId: id, type };
+      dispatch(toggleBookmarkAsync(payload));
     },
-    [bookmarks, isBookmarked]
+    [dispatch]
   );
 
-  useEffect(() => {
-    loadBookmarks();
-  }, [loadBookmarks]);
+  // Function to check loading status for a specific item
+  const isItemToggling = useCallback(
+    (id: string, type: Bookmark['type']) => {
+      return itemLoading[`${type}-${id}`] || false;
+    },
+    [itemLoading]
+  );
+
+  // The hook might not need its own refetch if data is loaded globally.
+  // If a component using this hook needs to trigger a global load, 
+  // it could dispatch loadBookmarks itself or we can expose a refetch here.
+  // For now, let's assume bookmarks are loaded by a higher-level component.
+  // const refetch = useCallback(() => {
+  //   dispatch(loadBookmarks());
+  // }, [dispatch]);
 
   return {
-    bookmarks,
-    loading,
-    error,
+    bookmarks, // The raw list of bookmarks from Redux
+    loading: overallLoading, // Global loading state for bookmarks list
+    error,    // Global error state for bookmarks list
     isBookmarked,
     toggleBookmark,
-    refetch: loadBookmarks,
+    isItemToggling, // Expose this to allow UI to react to individual item loading
+    // refetch, // Optionally expose refetch if needed
   };
 };

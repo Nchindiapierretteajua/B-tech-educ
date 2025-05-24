@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { Scholarship } from '@/types/scholarship';
-import { mockScholarships } from '@/data/mockScholarships';
+import { Scholarship, PaginatedScholarshipsResponse, ApiErrorResponse } from '@/types/api';
+import { getScholarships } from '@/lib/apiService';
 
 interface ScholarshipsState {
   items: Scholarship[];
@@ -12,7 +12,7 @@ interface ScholarshipsState {
     end: Date | null;
   };
   loading: boolean;
-  error: string | null;
+  error: ApiErrorResponse | string | null;
 }
 
 const initialState: ScholarshipsState = {
@@ -28,15 +28,21 @@ const initialState: ScholarshipsState = {
   error: null,
 };
 
-export const fetchScholarships = createAsyncThunk(
-  'scholarships/fetchScholarships',
-  async () => {
-    // Simulating API call with mock data
-    return new Promise<Scholarship[]>((resolve) => {
-      setTimeout(() => resolve(mockScholarships), 500);
-    });
+export const fetchScholarships = createAsyncThunk<
+  PaginatedScholarshipsResponse,
+  void,
+  { rejectValue: ApiErrorResponse | string }
+>('scholarships/fetchScholarships', async (_, { rejectWithValue }) => {
+  try {
+    const response = await getScholarships();
+    return response;
+  } catch (error) {
+    if (typeof error === 'object' && error !== null && 'message' in error) {
+      return rejectWithValue(error as ApiErrorResponse);
+    }
+    return rejectWithValue('An unexpected error occurred while fetching scholarships.');
   }
-);
+});
 
 const scholarshipsSlice = createSlice({
   name: 'scholarships',
@@ -84,9 +90,9 @@ const scholarshipsSlice = createSlice({
       })
       .addCase(fetchScholarships.fulfilled, (state, action) => {
         state.loading = false;
-        state.items = action.payload;
+        state.items = action.payload.scholarships;
         state.filteredItems = filterScholarships(
-          action.payload,
+          action.payload.scholarships,
           state.searchFilter,
           state.typeFilters,
           state.dateRange
@@ -94,7 +100,11 @@ const scholarshipsSlice = createSlice({
       })
       .addCase(fetchScholarships.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Failed to fetch scholarships';
+        if (action.payload) {
+          state.error = action.payload;
+        } else {
+          state.error = action.error.message || 'Failed to fetch scholarships';
+        }
       });
   },
 });
@@ -106,23 +116,23 @@ const filterScholarships = (
   dateRange: { start: Date | null; end: Date | null }
 ): Scholarship[] => {
   return scholarships.filter((scholarship) => {
-    // Filter by search term
     if (searchFilter) {
       const searchLower = searchFilter.toLowerCase();
       const matchesSearch =
         scholarship.title.toLowerCase().includes(searchLower) ||
-        scholarship.description.toLowerCase().includes(searchLower);
+        scholarship.description.toLowerCase().includes(searchLower) ||
+        scholarship.provider.toLowerCase().includes(searchLower);
       if (!matchesSearch) return false;
     }
 
-    // Filter by type
     if (typeFilters.length > 0) {
-      if (!typeFilters.includes(scholarship.type)) {
+      const typeLower = scholarship.type.toLowerCase();
+      const matchesType = typeFilters.some(filterType => typeLower.includes(filterType.toLowerCase()));
+      if (!matchesType) {
         return false;
       }
     }
 
-    // Filter by date range
     if (dateRange.start && dateRange.end) {
       const deadline = new Date(scholarship.deadline);
       const rangeStart = new Date(dateRange.start);

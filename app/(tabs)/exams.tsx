@@ -8,7 +8,7 @@ import {
   setSelectedMonth,
   setDateRange,
 } from '@/store/slices/examsSlice';
-import { Exam } from '@/types/exam';
+import { Exam } from '@/types/api';
 import Header from '@/components/ui/Header';
 import Card from '@/components/ui/Card';
 import FilterChip from '@/components/ui/FilterChip';
@@ -79,10 +79,13 @@ export default function ExamsScreen() {
   }
 
   if (error) {
+    const errorMessage = typeof error === 'object' && error !== null && 'message' in error
+                          ? (error as { message: string }).message
+                          : typeof error === 'string' ? error : 'An unknown error occurred.';
     return (
       <EmptyState
         title="Couldn't load exams"
-        description={error}
+        description={errorMessage}
         actionLabel="Try Again"
         onActionPress={() => dispatch(fetchExams())}
       />
